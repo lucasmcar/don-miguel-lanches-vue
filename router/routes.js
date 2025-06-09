@@ -7,7 +7,7 @@ export default createRouter({
   history: createWebHistory(),
   routes: [
     {
-      path: '/',
+      path: '/faca-seu-pedido',
       name: 'Cliente',
       component: ClienteView
     },
@@ -18,7 +18,7 @@ export default createRouter({
     },
     {
       path: '/:pathMatch(.*)*',
-      redirect: '/' // Qualquer rota desconhecida vai para a tela do cliente
+      redirect: '/faca-seu-pedido' // Qualquer rota desconhecida vai para a tela do cliente
     }
   ]
 });
