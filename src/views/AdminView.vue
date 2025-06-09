@@ -1,6 +1,6 @@
 <template>
   <div class="container py-4">
-    <h1 class="text-center mb-4 text-danger">🍔 Painel Administrativo - Dom Ramon Lanches</h1>
+    <h1 class="text-center mb-4 text-danger">🍔 Painel Administrativo - Don Miguel Lanches</h1>
     <div class="row g-4">
       <div class="col-md-6">
         <GerenciaCardapio />
