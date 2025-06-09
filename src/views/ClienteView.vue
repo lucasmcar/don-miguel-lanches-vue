@@ -1,7 +1,7 @@
 <template>
   <div class="container py-5">
 
-    
+
     <h1 class="text-center mb-4 text-primary fw-bold">🍔 Faça seu Pedido</h1>
 
     <div class="text-center mt-4">
@@ -27,20 +27,13 @@
     <div class="card shadow p-4 mb-4">
       <h4 class="mb-3">Escolha seus Lanches</h4>
       <div class="row">
-        <div
-          v-for="item in cardapio"
-          :key="item.id"
-          class="col-md-4 mb-3"
-        >
+        <div v-for="item in cardapio" :key="item.id" class="col-md-4 mb-3">
           <div class="card h-100 shadow-sm">
             <div class="card-body">
               <h5 class="card-title">{{ item.nome }}</h5>
               <p class="card-text text-muted">{{ item.descricao }}</p>
               <p class="fw-bold">R$ {{ item.preco.toFixed(2) }}</p>
-              <button
-                @click="adicionarItem(item)"
-                class="btn btn-sm btn-primary"
-              >
+              <button @click="adicionarItem(item)" class="btn btn-sm btn-primary">
                 Adicionar
               </button>
             </div>
@@ -53,37 +46,24 @@
     <div class="card shadow p-4 mb-4">
       <h4 class="mb-3">Resumo do Pedido</h4>
       <ul class="list-group mb-3">
-        <li
-          v-for="(item, index) in pedido.itens"
-          :key="index"
-          class="list-group-item d-flex justify-content-between align-items-center"
-        >
+        <li v-for="(item, index) in pedido.itens" :key="index"
+          class="list-group-item d-flex justify-content-between align-items-center">
           {{ item.nome }} - R$ {{ item.preco.toFixed(2) }}
-          <button
-            @click="removerItem(index)"
-            class="btn btn-sm btn-outline-danger"
-          >
+          <button @click="removerItem(index)" class="btn btn-sm btn-outline-danger">
             Remover
           </button>
         </li>
       </ul>
       <div class="mb-3">
         <label class="form-label">Observações:</label>
-        <textarea
-          v-model="pedido.observacoes"
-          class="form-control"
-          rows="2"
-          placeholder="Ex: sem cebola, ponto da carne, etc."
-        ></textarea>
+        <textarea v-model="pedido.observacoes" class="form-control" rows="2"
+          placeholder="Ex: sem cebola, ponto da carne, etc."></textarea>
       </div>
       <div class="d-flex justify-content-between align-items-center">
         <h5 class="mb-0 fw-bold text-success">
           Total: R$ {{ totalPedido.toFixed(2) }}
         </h5>
-        <button
-          @click="finalizarPedido"
-          class="btn btn-success btn-lg shadow"
-        >
+        <button @click="finalizarPedido" class="btn btn-success btn-lg shadow">
           Finalizar Pedido
         </button>
       </div>
@@ -92,17 +72,9 @@
       <div v-if="pedidoFinalizado" class="mt-4 p-3 border border-success rounded">
         <h5 class="mb-2 text-success">💸 Pagar com PIX</h5>
         <p class="mb-2">Chave PIX: <strong>{{ chavePix }}</strong></p>
-        <img
-          :src="pixQrCode"
-          alt="QR Code PIX"
-          class="img-fluid mb-2"
-          style="max-width: 200px;"
-        />
-        <p class="text-muted small">Escaneie o QR Code no seu app de banco ou copie a chave PIX para pagamento.</p>
-        <button
-          @click="confirmarPagamentoPix"
-          class="btn btn-outline-success btn-sm"
-        >
+        <!--<img v-if="pixQrCode" :src="pixQrCode" alt="QR Code PIX" class="img-fluid mb-2" style="max-width: 200px;" />
+        <p class="text-muted small">Escaneie o QR Code no seu app de banco ou copie a chave PIX para pagamento.</p>-->
+        <button @click="confirmarPagamentoPix" class="btn btn-outline-success btn-sm">
           Já paguei via PIX
         </button>
       </div>
@@ -111,16 +83,17 @@
 
 </template>
 <script>
-  import ConsultaPedido from "../componentes/ConsultaPedido.vue";
+import ConsultaPedido from "../componentes/ConsultaPedido.vue";
 </script>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
+import { QrCodePix } from "qrcode-pix";
 import { criarPedido } from "../../services/pedidoService";
 import { getLanches } from "../../services/cardapioService";
 import { getPedidos } from "../../services/pedidoService";
 
-const numeroPedido = Math.floor(100000 + Math.random() * 900000); 
+const numeroPedido = Math.floor(100000 + Math.random() * 900000);
 
 const pedido = ref({
   nome: "",
@@ -136,9 +109,92 @@ const cardapio = ref([]);
 const statusPedido = ref("");
 const pedidoFinalizado = ref(false);
 
-// Chave PIX e QR Code (exemplo estático; ideal: gerar dinâmico em backend)
-const chavePix = "pix@exemplo.com";
-const pixQrCode = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=pix@exemplo.com";
+
+const chavePix = "017.032.990-94"; // sua chave Pix aqui
+const pixQrCode = ref(""); // vai guardar o base64 do QR Code
+
+// Função para gerar QR Code Pix em base64 para img src
+// Função para gerar QR Code Pix em base64 para img src
+async function gerarQrCodePix() {
+  // Verificar se estamos no ambiente do navegador
+  if (typeof window === 'undefined' || typeof window.btoa === 'undefined') {
+    console.warn("Ambiente sem window.btoa, geração de QR Code Pix não suportada");
+    pixQrCode.value = "";
+    return;
+  }
+
+  // Depuração inicial
+  console.log("Valor bruto de totalPedido.value:", totalPedido.value, typeof totalPedido.value);
+
+  // Normalizar e converter totalPedido.value
+  let total;
+  try {
+    const normalizedValue = (totalPedido.value || '').toString().replace(',', '.');
+    total = parseFloat(normalizedValue);
+    console.log("Valor convertido:", total, typeof total, isNaN(total));
+  } catch (e) {
+    console.warn("Erro ao converter totalPedido.value:", e);
+    pixQrCode.value = "";
+    return;
+  }
+
+  // Validação do total
+  if (isNaN(total) || total <= 0) {
+    console.warn("Total do pedido inválido:", totalPedido.value, total);
+    pixQrCode.value = "";
+    return;
+  }
+
+  // Validação de campos
+  if (!chavePix || !pedido.value.nome || !pedido.value.endereco) {
+    console.warn("Dados insuficientes para gerar QR Code Pix");
+    pixQrCode.value = "";
+    return;
+  }
+
+  console.log("Total a pagar:", total, typeof total);
+  try {
+    const qrCodePix = new QrCodePix({
+      version: "01",
+      key: chavePix.toString(),
+      name: "Lucas Carvalho".substring(0, 25),
+      city: "Porto Alegre".substring(0, 15),
+      transactionId: `PEDIDO-${pedido.value.numeroPedido}`,
+      message: `Pagamento do pedido ${pedido.value.numeroPedido}`.substring(0, 70),
+      cep: "90010000",
+      value: total, // Usar total como número
+    });
+
+    const qrCodeData = await qrCodePix.base64();
+    if (!qrCodeData || typeof qrCodeData !== 'string' || !qrCodeData.startsWith('data:image/png;base64,')) {
+      console.warn("Dados do QR Code inválidos:", qrCodeData);
+      pixQrCode.value = "";
+      return;
+    }
+
+    pixQrCode.value = qrCodeData; 
+  } catch (error) {
+    console.error("Erro ao gerar QR Code PIX:", error);
+    pixQrCode.value = "";
+  }
+}
+
+// Calcular total
+const totalPedido = computed(() => {
+  return pedido.value.itens.reduce((total, item) => {
+    const preco = parseFloat(item.preco || 0);
+    return total + (isNaN(preco) ? 0 : preco);
+  }, 0);
+});
+
+// Regenera QR code sempre que o total ou o pedido for finalizado
+watch([totalPedido, pedidoFinalizado], () => {
+  if (pedidoFinalizado.value) {
+    gerarQrCodePix();
+  } else {
+    pixQrCode.value = "";
+  }
+});
 
 // Carregar cardápio
 onMounted(async () => {
@@ -156,10 +212,7 @@ const removerItem = (index) => {
   pedido.value.itens.splice(index, 1);
 };
 
-// Calcular total
-const totalPedido = computed(() => {
-  return pedido.value.itens.reduce((total, item) => total + item.preco, 0);
-});
+
 
 // Finalizar pedido
 const finalizarPedido = async () => {
