@@ -1,87 +1,126 @@
 <template>
   <div class="container py-5">
-
-
     <h1 class="text-center mb-4 text-primary fw-bold">🍔 Faça seu Pedido</h1>
 
-    <div class="text-center mt-4">
+    <div class="text-center mt-4 mb-4">
       <ConsultaPedido />
     </div>
+
     <!-- Dados do Cliente -->
     <div class="card shadow p-4 mb-4">
       <h4 class="mb-3">Seus Dados</h4>
       <div class="row g-3">
         <div class="col-md-4">
-          <input v-model="pedido.nome" type="text" class="form-control" placeholder="Seu nome" />
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-person"></i></span>
+            <input v-model="pedido.nome" type="text" class="form-control" placeholder="Seu nome completo" />
+          </div>
         </div>
         <div class="col-md-4">
-          <input v-model="pedido.endereco" type="text" class="form-control" placeholder="Endereço de entrega" />
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+            <input v-model="pedido.endereco" type="text" class="form-control" placeholder="Endereço de entrega" />
+          </div>
         </div>
         <div class="col-md-4">
-          <input v-model="pedido.telefone" type="text" class="form-control" placeholder="Telefone" />
-        </div>
-      </div>
-    </div>
-
-    <!-- Cardápio -->
-    <div class="card shadow p-4 mb-4">
-      <h4 class="mb-3">Escolha seus Lanches</h4>
-      <div class="row">
-        <div v-for="item in cardapio" :key="item.id" class="col-md-4 mb-3">
-          <div class="card h-100 shadow-sm">
-            <div class="card-body">
-              <h5 class="card-title">{{ item.nome }}</h5>
-              <p class="card-text text-muted">{{ item.descricao }}</p>
-              <p class="fw-bold">R$ {{ item.preco.toFixed(2) }}</p>
-              <button @click="adicionarItem(item)" class="btn btn-sm btn-primary">
-                Adicionar
-              </button>
-            </div>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+            <input v-model="pedido.telefone" type="text" class="form-control" placeholder="Telefone" />
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Cardápio -->
+    <!--<div class="card shadow p-4 mb-4">
+      <h4 class="mb-3">Escolha seus Lanches</h4>
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+        <div v-for="item in cardapio" :key="item.id" class="col">
+          <div class="card h-100 border-0 bg-light rounded-4">
+            <div class="card-body p-3">
+              <h6 class="card-title fw-semibold text-primary">{{ item.nome }}</h6>
+              <small class="text-muted d-block mb-2">{{ item.descricao }}</small>
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-bold">R$ {{ item.preco.toFixed(2) }}</span>
+                <button @click="adicionarItem(item)" class="btn btn-sm btn-outline-primary">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>-->
+    <div class="card shadow p-4 mb-4">
+  <h4 class="mb-3">Escolha seus Lanches</h4>
+  <ul class="list-group">
+    <li v-for="item in cardapio" :key="item.id" class="list-group-item d-flex justify-content-between align-items-start flex-column flex-md-row">
+      <div class="me-md-3">
+        <h6 class="fw-bold mb-1">{{ item.nome }} <span class="text-success">R$ {{ item.preco.toFixed(2) }}</span></h6>
+        <p class="mb-1 text-muted small">{{ item.descricao }}</p>
+      </div>
+      <div class="mt-2 mt-md-0">
+        <button @click="adicionarItem(item)" class="btn btn-sm btn-outline-primary">
+          Adicionar
+        </button>
+      </div>
+    </li>
+  </ul>
+</div>
+
     <!-- Resumo do Pedido -->
     <div class="card shadow p-4 mb-4">
       <h4 class="mb-3">Resumo do Pedido</h4>
       <ul class="list-group mb-3">
-        <li v-for="(item, index) in pedido.itens" :key="index"
-          class="list-group-item d-flex justify-content-between align-items-center">
-          {{ item.nome }} - R$ {{ item.preco.toFixed(2) }}
-          <button @click="removerItem(index)" class="btn btn-sm btn-outline-danger">
-            Remover
-          </button>
+        <li
+          v-for="(item, index) in pedido.itens"
+          :key="index"
+          class="list-group-item d-flex justify-content-between align-items-center bg-light rounded mb-1">
+          <div>
+            <strong>{{ item.nome }}</strong><br />
+            <small>R$ {{ item.preco.toFixed(2) }}</small>
+          </div>
+          <button @click="removerItem(index)" class="btn btn-sm btn-outline-danger">Remover</button>
         </li>
       </ul>
+
       <div class="mb-3">
         <label class="form-label">Observações:</label>
-        <textarea v-model="pedido.observacoes" class="form-control" rows="2"
-          placeholder="Ex: sem cebola, ponto da carne, etc."></textarea>
+        <textarea v-model="pedido.observacoes" class="form-control" rows="2" placeholder="Ex: sem cebola, ponto da carne, etc."></textarea>
       </div>
+
       <div class="d-flex justify-content-between align-items-center">
         <h5 class="mb-0 fw-bold text-success">
-          Total: R$ {{ totalPedido.toFixed(2) }}
+          Total: R$ {{ Number(totalPedido).toFixed(2) }}
         </h5>
-        <button @click="finalizarPedido" class="btn btn-success btn-lg shadow">
-          Finalizar Pedido
-        </button>
-      </div>
-
-      <!-- Pagamento via PIX -->
-      <div v-if="pedidoFinalizado" class="mt-4 p-3 border border-success rounded">
-        <h5 class="mb-2 text-success">💸 Pagar com PIX</h5>
-        <p class="mb-2">Chave PIX: <strong>{{ chavePix }}</strong></p>
-        <!--<img v-if="pixQrCode" :src="pixQrCode" alt="QR Code PIX" class="img-fluid mb-2" style="max-width: 200px;" />
-        <p class="text-muted small">Escaneie o QR Code no seu app de banco ou copie a chave PIX para pagamento.</p>-->
-        <button @click="confirmarPagamentoPix" class="btn btn-outline-success btn-sm">
-          Já paguei via PIX
-        </button>
       </div>
     </div>
-  </div>
 
+    <!-- Pagamento via PIX -->
+    <div v-if="pedidoFinalizado" class="mt-4 p-3 border border-success rounded">
+      <h5 class="mb-2 text-success">💸 Pagar com PIX</h5>
+      <p class="mb-2">Chave PIX: <strong>{{ chavePix }}</strong></p>
+      <!--<img
+        v-if="pixQrCode"
+        :src="pixQrCode"
+        alt="QR Code PIX"
+        class="img-fluid my-2 d-block mx-auto border p-2 rounded"
+        style="max-width: 200px;" />-->
+      <p class="text-muted small text-center">Escaneie ou copie a chave PIX acima.</p>
+      <button @click="confirmarPagamentoPix" class="btn btn-outline-success btn-sm">
+        Já paguei via PIX
+      </button>
+    </div>
+
+    <!-- Botão fixo de Finalizar Pedido -->
+    <button
+      v-if="pedido.itens.length"
+      @click="finalizarPedido"
+      class="btn btn-success btn-lg w-100 position-fixed bottom-0 start-0 end-0 rounded-0 shadow"
+      style="z-index: 999;">
+      Finalizar Pedido
+    </button>
+  </div>
 </template>
+
 <script>
 import ConsultaPedido from "../componentes/ConsultaPedido.vue";
 </script>
