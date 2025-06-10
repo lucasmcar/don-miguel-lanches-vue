@@ -50,29 +50,29 @@
       </div>
     </div>-->
     <div class="card shadow p-4 mb-4">
-  <h4 class="mb-3">Escolha seus Lanches</h4>
-  <ul class="list-group">
-    <li v-for="item in cardapio" :key="item.id" class="list-group-item d-flex justify-content-between align-items-start flex-column flex-md-row">
-      <div class="me-md-3">
-        <h6 class="fw-bold mb-1">{{ item.nome }} <span class="text-success">R$ {{ item.preco.toFixed(2) }}</span></h6>
-        <p class="mb-1 text-muted small">{{ item.descricao }}</p>
-      </div>
-      <div class="mt-2 mt-md-0">
-        <button @click="adicionarItem(item)" class="btn btn-sm btn-outline-primary">
-          Adicionar
-        </button>
-      </div>
-    </li>
-  </ul>
-</div>
+      <h4 class="mb-3">Escolha seus Lanches</h4>
+      <ul class="list-group">
+        <li v-for="item in cardapio" :key="item.id"
+          class="list-group-item d-flex justify-content-between align-items-start flex-column flex-md-row">
+          <div class="me-md-3">
+            <h6 class="fw-bold mb-1">{{ item.nome }} <span class="text-success">R$ {{ item.preco.toFixed(2) }}</span>
+            </h6>
+            <p class="mb-1 text-muted small">{{ item.descricao }}</p>
+          </div>
+          <div class="mt-2 mt-md-0">
+            <button @click="adicionarItem(item)" class="btn btn-sm btn-outline-primary">
+              Adicionar
+            </button>
+          </div>
+        </li>
+      </ul>
+    </div>
 
     <!-- Resumo do Pedido -->
     <div class="card shadow p-4 mb-4">
       <h4 class="mb-3">Resumo do Pedido</h4>
       <ul class="list-group mb-3">
-        <li
-          v-for="(item, index) in pedido.itens"
-          :key="index"
+        <li v-for="(item, index) in pedido.itens" :key="index"
           class="list-group-item d-flex justify-content-between align-items-center bg-light rounded mb-1">
           <div>
             <strong>{{ item.nome }}</strong><br />
@@ -84,7 +84,8 @@
 
       <div class="mb-3">
         <label class="form-label">Observações:</label>
-        <textarea v-model="pedido.observacoes" class="form-control" rows="2" placeholder="Ex: sem cebola, ponto da carne, etc."></textarea>
+        <textarea v-model="pedido.observacoes" class="form-control" rows="2"
+          placeholder="Ex: sem cebola, ponto da carne, etc."></textarea>
       </div>
 
       <div class="d-flex justify-content-between align-items-center">
@@ -111,11 +112,8 @@
     </div>
 
     <!-- Botão fixo de Finalizar Pedido -->
-    <button
-      v-if="pedido.itens.length"
-      @click="finalizarPedido"
-      class="btn btn-success btn-lg w-100 position-fixed bottom-0 start-0 end-0 rounded-0 shadow"
-      style="z-index: 999;">
+    <button v-if="pedido.itens.length" @click="finalizarPedido"
+      class="btn btn-success btn-lg w-100 position-fixed bottom-0 start-0 end-0 rounded-0 shadow" style="z-index: 999;">
       Finalizar Pedido
     </button>
   </div>
@@ -143,6 +141,19 @@ const pedido = ref({
   numeroPedido: numeroPedido,
   status: "Aguardando"
 });
+
+const gerarLinkWhatsapp = () => {
+  const telefone = pedido.telefone.replace(/\D/g, ''); // remove tudo que não é número
+  const numeroPedido = Math.floor(1000 + Math.random() * 9000); // exemplo de ID
+
+  const msg = `Olá ${pedido.nome}, seu pedido número #${numeroPedido} foi recebido com sucesso! 🍔
+
+  Acompanhe o status do seu pedido por aqui mesmo. Clicando no botão "acompanhar pedido"`;
+
+  const url = `https://wa.me/55${telefone}?text=${encodeURIComponent(msg)}`;
+  window.open(url, "_blank"); // abre o WhatsApp em nova aba
+};
+
 
 const cardapio = ref([]);
 const statusPedido = ref("");
@@ -211,7 +222,7 @@ async function gerarQrCodePix() {
       return;
     }
 
-    pixQrCode.value = qrCodeData; 
+    pixQrCode.value = qrCodeData;
   } catch (error) {
     console.error("Erro ao gerar QR Code PIX:", error);
     pixQrCode.value = "";
@@ -259,6 +270,7 @@ const finalizarPedido = async () => {
     await criarPedido(pedido.value);
     statusPedido.value = "Pedido enviado! Aguardando pagamento via PIX...";
     pedidoFinalizado.value = true;
+    gerarLinkWhatsapp();
   } catch (error) {
     console.error("Erro ao criar pedido:", error);
   }
