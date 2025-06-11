@@ -1,45 +1,28 @@
 <template>
-  <div class="login-view">
-    <h1>Login</h1>
-    <form @submit.prevent="login">
-      <input v-model="email" type="email" placeholder="Email" required />
-      <input v-model="senha" type="password" placeholder="Senha" required />
-      <button type="submit">Entrar</button>
-    </form>
+  <div class="d-flex justify-content-center align-items-center vh-100 bg-light">
+    <div class="card p-4 shadow" style="min-width: 300px">
+      <h3 class="text-center mb-3">Acessar Painel</h3>
+      <button class="btn btn-danger w-100" @click="loginGoogle">Entrar com Google</button>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/services/firebase';
+import { auth, provider } from '../../firebase';
+import { signInWithPopup } from 'firebase/auth';
 import { useRouter } from 'vue-router';
 
-const email = ref('');
-const senha = ref('');
 const router = useRouter();
 
-const login = async () => {
+async function loginGoogle() {
   try {
-    await signInWithEmailAndPassword(auth, email.value, senha.value);
-    alert('Login realizado com sucesso!');
-    router.push('/admin');
+    const result = await signInWithPopup(auth, provider);
+    if (result.user) {
+      router.push('/admin'); // redireciona após login
+    }
   } catch (error) {
-    console.error(error);
-    alert('Erro ao fazer login: ' + error.message);
+    console.error('Erro ao logar:', error);
+    alert('Erro ao logar com o Google.');
   }
-};
+}
 </script>
-
-<style scoped>
-.login-view {
-  max-width: 400px;
-  margin: auto;
-  padding: 1rem;
-}
-input, button {
-  display: block;
-  margin-bottom: 0.5rem;
-  width: 100%;
-}
-</style>

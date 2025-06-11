@@ -1,5 +1,8 @@
 <template>
   <div class="container py-4">
+    <button class="btn btn-outline-danger btn-sm float-end" @click="logout">
+      Sair
+    </button>
     <h1 class="text-center mb-4 text-danger fw-bold">🍔 Painel Administrativo - Don Miguel Lanches</h1>
 
     <!-- DASHBOARD -->
@@ -67,6 +70,8 @@
 import { ref } from 'vue';
 import GerenciaCardapio from "../componentes/GerenciaCardapio.vue";
 import GerenciaPedido from "../componentes/GerenciaPedido.vue";
+import { getAuth, signOut } from 'firebase/auth';
+import { useRouter } from 'vue-router';
 
 // Indicadores
 const totalPedidos = ref(0);
@@ -81,5 +86,16 @@ function atualizarDashboard(pedidos) {
   totalVendas.value = pedidos.reduce((soma, pedido) => {
     return soma + (pedido.pagamentoConfirmado ? pedido.itens.reduce((acc, item) => acc + item.preco, 0) : 0);
   }, 0);
+}
+
+
+
+const router = useRouter();
+
+function logout() {
+  const auth = getAuth();
+  signOut(auth).then(() => {
+    router.push('/login');
+  });
 }
 </script>
