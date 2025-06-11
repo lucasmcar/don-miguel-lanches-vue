@@ -31,6 +31,7 @@
                   {{ item.nome }} - R$ {{ item.preco.toFixed(2) }}
                 </li>
               </ul>
+              <p>Data: {{ formatarData(pedido.dataCriacao) }}</p>
             </div>
           </div>
 
@@ -68,6 +69,12 @@ import { buscarPedidoPorNumero } from "../../services/pedidoService";
 const mostrarModal = ref(false);
 const numeroPedido = ref("");
 const pedido = ref(null);
+
+const formatarData = (timestamp) => {
+  if (!timestamp || !timestamp.toDate) return "Data inválida";
+  const data = timestamp.toDate();
+  return data.toLocaleString("pt-BR"); // ou toLocaleDateString(), se quiser só a data
+};
 
 const abrirModal = () => {
   mostrarModal.value = true;

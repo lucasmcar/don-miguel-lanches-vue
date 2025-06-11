@@ -1,4 +1,24 @@
 <template>
+
+  <!-- Modal -->
+  <div v-if="mostrarModal" class="modal-overlay">
+    <div class="modal-box">
+      <h5>✅ Pedido Finalizado</h5>
+      <p>Seu pedido foi registrado com sucesso!</p>
+
+      <p>
+        <strong>Número do pedido:</strong>
+        <code>{{ pedido.numeroPedido }}</code>
+        <button @click="copiarNumeroPedido" class="btn btn-sm btn-outline-primary ms-2">
+          {{ copiado ? 'Copiado!' : 'Copiar' }}
+        </button>
+      </p>
+
+      <p>Acompanhe o andamento aqui mesmo pelo site.</p>
+
+      <button @click="fecharModal" class="btn btn-success mt-3">Ok, entendi</button>
+    </div>
+  </div>
   <div class="container py-5">
     <h1 class="text-center mb-4 text-primary fw-bold">🍔 Faça seu Pedido</h1>
 
@@ -99,12 +119,8 @@
     <div v-if="pedidoFinalizado" class="mt-4 p-3 border border-success rounded">
       <h5 class="mb-2 text-success">💸 Pagar com PIX</h5>
       <p class="mb-2">Chave PIX: <strong>{{ chavePix }}</strong></p>
-      <!--<img
-        v-if="pixQrCode"
-        :src="pixQrCode"
-        alt="QR Code PIX"
-        class="img-fluid my-2 d-block mx-auto border p-2 rounded"
-        style="max-width: 200px;" />-->
+      <img v-if="pixQrCode" :src="pixQrCode" alt="QR Code PIX" class="img-fluid my-2 d-block mx-auto border p-2 rounded"
+        style="max-width: 200px;" />
       <p class="text-muted small text-center">Escaneie ou copie a chave PIX acima.</p>
       <button @click="confirmarPagamentoPix" class="btn btn-outline-success btn-sm">
         Já paguei via PIX
@@ -142,17 +158,46 @@ const pedido = ref({
   status: "Aguardando"
 });
 
-const gerarLinkWhatsapp = () => {
-  const telefone = pedido.telefone.replace(/\D/g, ''); // remove tudo que não é número
-  const numeroPedido = Math.floor(1000 + Math.random() * 9000); // exemplo de ID
 
-  const msg = `Olá ${pedido.nome}, seu pedido número #${numeroPedido} foi recebido com sucesso! 🍔
+const mostrarModal = ref(false);
+const copiado = ref(false);
 
-  Acompanhe o status do seu pedido por aqui mesmo. Clicando no botão "acompanhar pedido"`;
+
+// Copiar número do pedido
+const copiarNumeroPedido = async () => {
+  try {
+    await navigator.clipboard.writeText(pedido.value.numeroPedido.toString());
+    copiado.value = true;
+    setTimeout(() => (copiado.value = false), 2000); // reseta após 2s
+  } catch (error) {
+    alert("Erro ao copiar.");
+    console.error(error);
+  }
+};
+
+// Fechar modal
+const fecharModal = () => {
+  mostrarModal.value = false;
+};
+
+/*const gerarLinkWhatsapp = () => {
+  if (!pedido.value || !pedido.value.telefone) {
+    console.warn("Telefone ou pedido está indefinido:", pedido.value);
+    alert("Não foi possível gerar o link do WhatsApp. Verifique os dados do pedido.");
+    return;
+
+  }
+
+  const telefone = pedido.value.telefone.toString().replace(/\D/g, '');
+  const numeroPedido = pedido.value.numeroPedido || Math.floor(1000 + Math.random() * 9000);
+
+  const msg = `Olá ${pedido.value.nome || "cliente"}, seu pedido número #${numeroPedido} foi recebido com sucesso! 🍔
+
+Acompanhe o status do seu pedido por aqui mesmo. Clicando no botão "acompanhar pedido"`;
 
   const url = `https://wa.me/55${telefone}?text=${encodeURIComponent(msg)}`;
-  window.open(url, "_blank"); // abre o WhatsApp em nova aba
-};
+  window.open(url, "_blank");
+};*/
 
 
 const cardapio = ref([]);
@@ -160,71 +205,49 @@ const statusPedido = ref("");
 const pedidoFinalizado = ref(false);
 
 
-const chavePix = "017.032.990-94"; // sua chave Pix aqui
+const chavePix = "01703299094"; // sua chave Pix aqui
 const pixQrCode = ref(""); // vai guardar o base64 do QR Code
 
 // Função para gerar QR Code Pix em base64 para img src
 // Função para gerar QR Code Pix em base64 para img src
 async function gerarQrCodePix() {
-  // Verificar se estamos no ambiente do navegador
   if (typeof window === 'undefined' || typeof window.btoa === 'undefined') {
     console.warn("Ambiente sem window.btoa, geração de QR Code Pix não suportada");
     pixQrCode.value = "";
     return;
   }
 
-  // Depuração inicial
-  console.log("Valor bruto de totalPedido.value:", totalPedido.value, typeof totalPedido.value);
-
-  // Normalizar e converter totalPedido.value
+  // Normalizar o valor
   let total;
   try {
     const normalizedValue = (totalPedido.value || '').toString().replace(',', '.');
     total = parseFloat(normalizedValue);
-    console.log("Valor convertido:", total, typeof total, isNaN(total));
   } catch (e) {
     console.warn("Erro ao converter totalPedido.value:", e);
     pixQrCode.value = "";
     return;
   }
 
-  // Validação do total
   if (isNaN(total) || total <= 0) {
     console.warn("Total do pedido inválido:", totalPedido.value, total);
     pixQrCode.value = "";
     return;
   }
 
-  // Validação de campos
-  if (!chavePix || !pedido.value.nome || !pedido.value.endereco) {
-    console.warn("Dados insuficientes para gerar QR Code Pix");
-    pixQrCode.value = "";
-    return;
-  }
+  // Gerar o QR Code Pix com os dados corretos
+  const qrCodePix = QrCodePix({
+    version: '01',
+    key: chavePix,      // Chave Pix válida (email fictício aqui)
+    name: 'Lucas Carvalho',              // Máx. 25 caracteres, SEM acento
+    city: 'PortoAlegre',               // Máx. 15 caracteres, SEM acento
+    message: 'Pagamento do pedido',
+    value: total                       // Valor em número (float), com ponto
+  });
 
-  console.log("Total a pagar:", total, typeof total);
   try {
-    const qrCodePix = new QrCodePix({
-      version: "01",
-      key: chavePix.toString(),
-      name: "Lucas Carvalho".substring(0, 25),
-      city: "Porto Alegre".substring(0, 15),
-      transactionId: `PEDIDO-${pedido.value.numeroPedido}`,
-      message: `Pagamento do pedido ${pedido.value.numeroPedido}`.substring(0, 70),
-      cep: "90010000",
-      value: total, // Usar total como número
-    });
-
-    const qrCodeData = await qrCodePix.base64();
-    if (!qrCodeData || typeof qrCodeData !== 'string' || !qrCodeData.startsWith('data:image/png;base64,')) {
-      console.warn("Dados do QR Code inválidos:", qrCodeData);
-      pixQrCode.value = "";
-      return;
-    }
-
-    pixQrCode.value = qrCodeData;
+    pixQrCode.value = await qrCodePix.base64(); // Gera imagem base64 para o <img>
   } catch (error) {
-    console.error("Erro ao gerar QR Code PIX:", error);
+    console.error("Erro ao gerar o QR Code Pix:", error);
     pixQrCode.value = "";
   }
 }
@@ -270,7 +293,7 @@ const finalizarPedido = async () => {
     await criarPedido(pedido.value);
     statusPedido.value = "Pedido enviado! Aguardando pagamento via PIX...";
     pedidoFinalizado.value = true;
-    gerarLinkWhatsapp();
+    mostrarModal.value = true; // mostra modal
   } catch (error) {
     console.error("Erro ao criar pedido:", error);
   }
@@ -322,5 +345,27 @@ h1 {
 
 .btn-primary:hover {
   background-color: #c82333;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-box {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
 }
 </style>

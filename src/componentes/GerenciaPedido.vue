@@ -18,6 +18,7 @@
             <p><strong>Telefone:</strong> {{ pedido.telefone }}</p>
             <p><strong>Endereço:</strong> {{ pedido.endereco }}</p>
             <p><strong>Observações:</strong> {{ pedido.observacoes }}</p>
+            <p><strong>Data:</strong> {{ formatarData(pedido.dataCriacao) }}</p>
 
             <ul class="list-group mb-2">
               <li v-for="(item, idx) in pedido.itens" :key="idx" class="list-group-item">
@@ -40,7 +41,7 @@
                 <option>Finalizado</option>
               </select>
               <button @click="atualizarStatus(pedido)" class="btn btn-success btn-sm">Atualizar Status</button>
-              <button @click="confirmarPagamento(pedido)" class="btn btn-outline-primary btn-sm">
+              <button :disabled="pedido.pagamentoConfirmado" @click="confirmarPagamento(pedido)" class="btn btn-outline-primary btn-sm">
                 Confirmar Pagamento
               </button>
             </div>
@@ -59,11 +60,20 @@ const emit = defineEmits(['atualizarDashboard']);
 
 const pedidos = ref([]);
 
+const formatarData = (timestamp) => {
+  if (!timestamp || !timestamp.toDate) return "Data inválida";
+  const data = timestamp.toDate();
+  return data.toLocaleString("pt-BR"); // ou toLocaleDateString(), se quiser só a data
+};
+
 onMounted(() => {
   getPedidos((pedidosFirestore) => {
     pedidos.value = pedidosFirestore;
     emit('atualizarDashboard', pedidosFirestore); // envia dados ao AdminView
+     console.log("Pedidos carregados:", pedidosFirestore);
   });
+
+ 
 });
 
 watch(pedidos, (newVal) => {

@@ -1,10 +1,12 @@
 import { db } from '../firebase';
-import { collection, query, where, getDocs, onSnapshot, addDoc, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot, addDoc, updateDoc, doc, Timestamp, orderBy } from 'firebase/firestore';
 
 // Monitorar pedidos em tempo real
 export const getPedidos = (callback) => {
   const pedidosRef = collection(db, 'pedidos');
-  return onSnapshot(pedidosRef, (snapshot) => {
+  const pedidosQuery = query(pedidosRef, orderBy("dataCriacao", "asc"));
+
+  return onSnapshot(pedidosQuery, (snapshot) => {
     const lista = [];
     snapshot.forEach((doc) => {
       lista.push({ id: doc.id, ...doc.data() });
@@ -26,7 +28,11 @@ export const ouvirStatusPedido = (pedidoId, callback) => {
 
 // Cria um novo pedido
 export const criarPedido = async (pedido) => {
-  await addDoc(collection(db, 'pedidos'), pedido);
+  const pedidoComData = {
+    ...pedido,
+    dataCriacao: Timestamp.now(), // grava data e hora do servidor
+  };
+  await addDoc(collection(db, 'pedidos'), pedidoComData);
 };
 
 // Atualizar status do pedido
