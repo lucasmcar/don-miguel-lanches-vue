@@ -68,7 +68,6 @@
               v-model="pedido.telefone"
               type="text"
               class="form-control"
-              :class="{ 'is-invalid': errors.telefone }"
               placeholder="Telefone (ex: 11999999999)"
             />
             <div v-if="errors.telefone" class="invalid-feedback">
@@ -202,7 +201,6 @@ const pedido = ref({
 const errors = ref({
   nome: "",
   endereco: "",
-  telefone: "",
 });
 
 const mostrarModal = ref(false);
@@ -223,11 +221,7 @@ const validateEndereco = () => {
 };
 
 const isFormValid = computed(() => {
-  return (
-    pedido.value.nome.trim() &&
-    pedido.value.endereco.trim() &&
-    /^\(\d{2}\)\s\d{4,5}-\d{4}$/.test(pedido.value.telefone)
-  );
+  return pedido.value.nome.trim() && pedido.value.endereco.trim();
 });
 
 // Copiar número do pedido
@@ -329,7 +323,6 @@ const finalizarPedido = async () => {
   if (!isFormValid.value) {
     validateNome();
     validateEndereco();
-    validateTelefone();
     return;
   }
   try {
