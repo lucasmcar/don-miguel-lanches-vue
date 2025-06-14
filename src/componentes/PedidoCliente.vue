@@ -1,8 +1,5 @@
 <template>
-  <!-- Adicione o botão de consulta do pedido -->
-
   <div class="container mt-4">
-    
     <h2>Faça seu Pedido</h2>
     <form @submit.prevent="enviarPedido" class="mb-3">
       <div class="mb-2">
@@ -24,8 +21,11 @@
 
     <h4 class="mt-3">Itens Selecionados:</h4>
     <ul class="list-group mb-2">
-      <li v-for="(item, index) in lanchesSelecionados" :key="index"
-        class="list-group-item d-flex justify-content-between">
+      <li
+        v-for="(item, index) in lanchesSelecionados"
+        :key="index"
+        class="list-group-item d-flex justify-content-between"
+      >
         {{ item.nome }} x{{ item.quantidade }} - R$ {{ item.subtotal }}
         <div>
           <button @click="removerLanche(item)" class="btn btn-danger btn-sm">-</button>
@@ -35,14 +35,21 @@
 
     <div v-if="total > 0" class="mb-3">
       <h4>Total: R$ {{ total }}</h4>
-      <p>Chave Pix: <strong>{{ chavePix }}</strong></p>
-      <button @click="copiarChavePix" class="btn btn-outline-secondary btn-sm mb-2">Copiar Chave Pix</button>
+      <p>
+        Chave Pix: <strong>{{ chavePix }}</strong>
+      </p>
+      <button @click="copiarChavePix" class="btn btn-outline-secondary btn-sm mb-2">
+        Copiar Chave Pix
+      </button>
       <p>Ou escaneie o QR Code abaixo para pagar:</p>
       <img :src="qrCodeUrl" alt="QR Code Pix" class="img-fluid" />
     </div>
 
-    <button class="btn btn-primary" @click="enviarPedido"
-      :disabled="!lanchesSelecionados.length || !nome || !telefone || !endereco">
+    <button
+      class="btn btn-primary"
+      @click="enviarPedido"
+      :disabled="!lanchesSelecionados.length || !nome || !telefone || !endereco"
+    >
       Enviar Pedido
     </button>
 
@@ -50,11 +57,8 @@
       <h5>Status do Pedido:</h5>
       <span :class="['badge', badgeClass(statusPedido)]">{{ statusPedido }}</span>
     </div>
-
   </div>
-
 </template>
-
 
 <script setup>
 import { ref, computed, watch } from "vue";
@@ -105,12 +109,21 @@ const total = computed(() => {
 });
 
 const qrCodeUrl = computed(() => {
-  const pixPayload = `00020126360014BR.GOV.BCB.PIX0114${chavePix}520400005303986540${total.value.toFixed(2)}5802BR5920Lancheria Teste6009SAO PAULO62070503***6304`;
-  return `https://chart.googleapis.com/chart?chs=250x250&cht=qr&chl=${encodeURIComponent(pixPayload)}`;
+  const pixPayload = `00020126360014BR.GOV.BCB.PIX0114${chavePix}520400005303986540${total.value.toFixed(
+    2
+  )}5802BR5920Lancheria Teste6009SAO PAULO62070503***6304`;
+  return `https://chart.googleapis.com/chart?chs=250x250&cht=qr&chl=${encodeURIComponent(
+    pixPayload
+  )}`;
 });
 
 const enviarPedido = async () => {
-  if (!nome.value || !telefone.value || !endereco.value || !lanchesSelecionados.value.length) {
+  if (
+    !nome.value ||
+    !telefone.value ||
+    !endereco.value ||
+    !lanchesSelecionados.value.length
+  ) {
     alert("Preencha todos os campos e adicione ao menos um lanche.");
     return;
   }

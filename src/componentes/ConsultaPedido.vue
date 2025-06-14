@@ -1,6 +1,6 @@
 <template>
   <div>
-    <button class="btn btn-primary" @click="abrirModal">
+    <button class="btn btn-warning" @click="abrirModal">
       Acompanhar Pedido
     </button>
 
