@@ -1,5 +1,5 @@
 import { db } from '../firebase';
-import { collection, query, where, getDocs, onSnapshot, addDoc, updateDoc, doc, Timestamp, orderBy } from 'firebase/firestore';
+import { collection, limit, startAfter, query, where, getDocs, onSnapshot, addDoc, updateDoc, doc, Timestamp, orderBy } from 'firebase/firestore';
 
 // Monitorar pedidos em tempo real
 export const getPedidos = (callback) => {
@@ -71,3 +71,24 @@ export async function buscarPedidoPorNumero(numeroPedido) {
     throw new Error("Pedido não encontrado.");
   }
 }
+
+/*export async function getPedidosLazy(batchSize = 10, lastDoc = null) {
+  const pedidosRef = collection(db, 'pedidos');
+  let pedidosQuery = query(pedidosRef, orderBy('dataCriacao', 'desc'), limit(batchSize));
+
+  if (lastDoc) {
+    pedidosQuery = query(pedidosRef, orderBy('dataCriacao', 'desc'), startAfter(lastDoc), limit(batchSize));
+  }
+
+  const snapshot = await getDocs(pedidosQuery);
+
+  const pedidos = snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+
+  return {
+    docs: pedidos,
+    lastVisible: snapshot.docs[snapshot.docs.length - 1] || null
+  };
+}*/
