@@ -13,7 +13,6 @@ import { signInWithPopup } from "firebase/auth";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
-const errorMessage = ref(""); // Declarado como ref
 
 // Use electronAPI.openExternal para abrir o link
 /*const openLoginPage = () => {
