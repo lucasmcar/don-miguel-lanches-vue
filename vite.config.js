@@ -4,6 +4,10 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  define: {
+    __dirname: JSON.stringify(''), // evita erro no build
+  },
+  base: './',
   plugins: [vue(), nodePolyfills({
     buffer: true, // Ativa o polyfill para Buffer
   }),

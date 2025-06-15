@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router';
 
 import ClienteView from '../src/views/ClienteView.vue';
 import AdminView from '../src/views/AdminView.vue';
@@ -26,25 +26,34 @@ const routes = [
   ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes,
 });
 
 router.beforeEach((to, from, next) => {
-  const auth = getAuth();
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  const isElectron = navigator.userAgent.toLowerCase().includes('electron')
+  const isAdminPath = to.path.startsWith('/admin') || to.path.startsWith('/dml')
+  const auth = getAuth()
+
+  if (isElectron && !isAdminPath) {
+    // bloqueia acesso a qualquer rota que não seja admin ou dml
+    return next('/dml/login')
+  }
+
+  const requiresAuth = to.meta.requiresAuth // exemplo: meta flag nas rotas protegidas
 
   if (requiresAuth) {
-    onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      unsubscribe()
       if (user) {
-        next(); // usuário logado
+        next()
       } else {
-        next('/login'); // redireciona
+        next('/dml/login')
       }
-    });
+    })
   } else {
-    next();
+    next()
   }
-});
+})
 
 export default router;

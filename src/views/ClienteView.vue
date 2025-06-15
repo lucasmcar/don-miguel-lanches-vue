@@ -24,11 +24,49 @@
     </div>
   </div>
 
-  <div class="container py-5 mt -4">
-    <h1 class="text-center mb-4 text-primary fw-bold">Faça seu Pedido</h1>
+  <!-- Modal de Seleção de Adicionais -->
+  <div v-if="mostrarModalAdicionais" class="modal-overlay">
+    <div class="modal-box shadow-lg">
+      <h5 class="text-primary">🍔 Personalizar {{ lancheSelecionado?.nome }}</h5>
+      <p class="text-muted small mb-3">Selecione os adicionais desejados:</p>
+      <ul class="list-group mb-3">
+        <li
+          v-for="adicional in cardapioAdicionais"
+          :key="adicional.id"
+          class="list-group-item d-flex align-items-center"
+        >
+          <input
+            type="checkbox"
+            v-model="adicionaisSelecionados"
+            :value="adicional"
+            class="form-check-input me-2"
+          />
+          <label class="form-check-label flex-grow-1">
+            {{ adicional.nome }}
+            <span class="text-success">R$ {{ adicional.preco.toFixed(2) }}</span>
+            <p class="text-muted small mb-0">{{ adicional.descricao }}</p>
+          </label>
+        </li>
+        <li v-if="!cardapioAdicionais.length" class="list-group-item text-muted">
+          Nenhum adicional disponível.
+        </li>
+      </ul>
+      <div class="d-flex gap-2">
+        <button @click="confirmarAdicionais" class="btn btn-primary w-50">
+          Adicionar ao Pedido
+        </button>
+        <button @click="cancelarAdicionais" class="btn btn-secondary w-50">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container py-5">
+    <h1 class="text-center mb-4 text-primary fw-bold">🍔 Faça seu Pedido</h1>
 
     <!-- Dados do Cliente -->
-    <div class="card shadow-sm p-4 mb-4 mt-5">
+    <div class="card shadow-sm p-4 mb-4">
       <h4 class="mb-4 text-primary">Seus Dados</h4>
       <div class="row g-3">
         <div class="col-md-4">
@@ -68,41 +106,113 @@
               v-model="pedido.telefone"
               type="text"
               class="form-control"
-              placeholder="Telefone (ex: 11999999999)"
+              placeholder="Telefone (ex: (11) 99999-9999)"
             />
-            <div v-if="errors.telefone" class="invalid-feedback">
-              {{ errors.telefone }}
-            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Cardápio -->
+    <!-- Cardápio: Lanches -->
     <div class="card shadow-sm p-4 mb-4">
-      <h4 class="mb-4 text-primary">Escolha seus Lanches</h4>
-      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
-        <div v-for="item in cardapio" :key="item.id" class="col">
-          <div class="card h-100 border-0 shadow-sm rounded-3">
-            <img
-              :src="item.imagem || 'https://via.placeholder.com/300x150?text=Sem+Imagem'"
-              :alt="item.nome"
-              class="card-img-top rounded-top"
-              style="height: 150px; object-fit: cover"
-            />
-            <div class="card-body p-3">
-              <h6 class="card-title fw-bold text-primary">{{ item.nome }}</h6>
-              <p class="text-muted small mb-2">{{ item.descricao }}</p>
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="fw-bold text-success">R$ {{ item.preco.toFixed(2) }}</span>
-                <button @click="adicionarItem(item)" class="btn btn-sm btn-primary">
-                  <i class="bi bi-plus-circle me-1"></i> Adicionar
-                </button>
-              </div>
-            </div>
+      <h4 class="mb-4 text-primary">🍔 Escolha seus Lanches</h4>
+      <ul class="list-group">
+        <li
+          v-for="item in cardapioLanches"
+          :key="item.id"
+          class="list-group-item d-flex align-items-center bg-light rounded mb-2"
+        >
+          <img
+            :src="item.imagem || 'https://via.placeholder.com/100x100?text=Sem+Imagem'"
+            :alt="item.nome"
+            class="rounded me-3"
+            style="width: 100px; height: 100px; object-fit: cover"
+          />
+          <div class="flex-grow-1">
+            <h6 class="mb-1 fw-bold text-primary">{{ item.nome }}</h6>
+            <p class="text-muted small mb-1">{{ item.descricao }}</p>
+            <span class="fw-bold text-success">R$ {{ item.preco.toFixed(2) }}</span>
           </div>
-        </div>
-      </div>
+          <button
+            @click="abrirModalAdicionais(item)"
+            class="btn btn-sm btn-primary ms-3"
+            :aria-label="'Adicionar ' + item.nome"
+          >
+            <i class="bi bi-plus-circle me-1"></i> Adicionar
+          </button>
+        </li>
+        <li v-if="!cardapioLanches.length" class="list-group-item text-muted">
+          Nenhum lanche disponível no momento.
+        </li>
+      </ul>
+    </div>
+
+    <!-- Cardápio: Bebidas -->
+    <div class="card shadow-sm p-4 mb-4">
+      <h4 class="mb-4 text-primary">🥤 Escolha suas Bebidas</h4>
+      <ul class="list-group">
+        <li
+          v-for="item in cardapioBebidas"
+          :key="item.id"
+          class="list-group-item d-flex align-items-center bg-light rounded mb-2"
+        >
+          <img
+            :src="item.imagem || 'https://via.placeholder.com/100x100?text=Sem+Imagem'"
+            :alt="item.nome"
+            class="rounded me-3"
+            style="width: 100px; height: 100px; object-fit: cover"
+          />
+          <div class="flex-grow-1">
+            <h6 class="mb-1 fw-bold text-primary">{{ item.nome }}</h6>
+            <p class="text-muted small mb-1">{{ item.descricao }}</p>
+            <span class="fw-bold text-success">R$ {{ item.preco.toFixed(2) }}</span>
+          </div>
+          <button
+            @click="adicionarItem(item)"
+            class="btn btn-sm btn-primary ms-3"
+            :aria-label="'Adicionar ' + item.nome"
+          >
+            <i class="bi bi-plus-circle me-1"></i> Adicionar
+          </button>
+        </li>
+        <li v-if="!cardapioBebidas.length" class="list-group-item text-muted">
+          Nenhuma bebida disponível no momento.
+        </li>
+      </ul>
+    </div>
+
+    <!-- Cardápio: Adicionais -->
+    <div class="card shadow-sm p-4 mb-4">
+      <h4 class="mb-4 text-primary">🍟 Adicionais</h4>
+      <ul class="list-group">
+        <li
+          v-for="item in cardapioAdicionais"
+          :key="item.id"
+          class="list-group-item d-flex align-items-center bg-light rounded mb-2"
+        >
+          <img
+            :src="item.imagem || 'https://via.placeholder.com/100x100?text=Sem+Imagem'"
+            :alt="item.nome"
+            class="rounded me-3"
+            style="width: 100px; height: 100px; object-fit: cover"
+          />
+          <div class="flex-grow-1">
+            <h6 class="mb-1 fw-bold text-primary">{{ item.nome }}</h6>
+            <p class="text-muted small mb-1">{{ item.descricao }}</p>
+            <span class="fw-bold text-success">R$ {{ item.preco.toFixed(2) }}</span>
+          </div>
+          <button
+            @click="adicionarItem(item)"
+            class="btn btn-sm btn-primary ms-3"
+            :aria-label="'Adicionar ' + item.nome"
+          >
+            <i class="bi bi-plus-circle me-1"></i> Adicionar
+          </button>
+        </li>
+        <li v-if="!cardapioAdicionais.length" class="list-group-item text-muted">
+          Nenhum adicional disponível no momento.
+        </li>
+      </ul>
     </div>
 
     <!-- Resumo do Pedido -->
@@ -112,16 +222,30 @@
         <li
           v-for="(item, index) in pedido.itens"
           :key="index"
-          class="list-group-item d-flex justify-content-between align-items-center bg-light rounded mb-1"
+          class="list-group-item bg-light rounded mb-1"
         >
-          <div>
-            <strong>{{ item.nome }}</strong
-            ><br />
-            <small>R$ {{ item.preco.toFixed(2) }}</small>
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <strong>{{ item.nome }}</strong>
+              <span class="text-success ms-2">R$ {{ item.preco.toFixed(2) }}</span>
+              <ul v-if="item.adicionais?.length" class="list-unstyled mt-1">
+                <li
+                  v-for="adicional in item.adicionais"
+                  :key="adicional.id"
+                  class="text-muted small"
+                >
+                  + {{ adicional.nome }} (R$ {{ adicional.preco.toFixed(2) }})
+                </li>
+              </ul>
+            </div>
+            <button
+              @click="removerItem(index)"
+              class="btn btn-sm btn-outline-danger"
+              :aria-label="'Remover ' + item.nome"
+            >
+              <i class="bi bi-trash"></i> Remover
+            </button>
           </div>
-          <button @click="removerItem(index)" class="btn btn-sm btn-outline-danger">
-            <i class="bi bi-trash"></i> Remover
-          </button>
         </li>
       </ul>
       <p v-else class="text-muted">Nenhum item selecionado.</p>
@@ -183,7 +307,7 @@ import ConsultaPedido from "../componentes/ConsultaPedido.vue";
 import { ref, computed, onMounted, watch } from "vue";
 import { QrCodePix } from "qrcode-pix";
 import { criarPedido } from "../../services/pedidoService";
-import { getLanches } from "../../services/cardapioService";
+import { getLanches, getBebidas, getAdicionais } from "../../services/cardapioService";
 import { getPedidos } from "../../services/pedidoService";
 
 const numeroPedido = Math.floor(100000 + Math.random() * 900000);
@@ -205,11 +329,16 @@ const errors = ref({
 
 const mostrarModal = ref(false);
 const copiado = ref(false);
-const cardapio = ref([]);
+const cardapioLanches = ref([]);
+const cardapioBebidas = ref([]);
+const cardapioAdicionais = ref([]);
 const statusPedido = ref("");
 const pedidoFinalizado = ref(false);
 const chavePix = "01703299094";
 const pixQrCode = ref("");
+const mostrarModalAdicionais = ref(false);
+const lancheSelecionado = ref(null);
+const adicionaisSelecionados = ref([]);
 
 // Form validation
 const validateNome = () => {
@@ -241,6 +370,37 @@ const fecharModal = () => {
   mostrarModal.value = false;
 };
 
+// Modal de adicionais
+const abrirModalAdicionais = (item) => {
+  lancheSelecionado.value = item;
+  adicionaisSelecionados.value = [];
+  mostrarModalAdicionais.value = true;
+};
+
+const confirmarAdicionais = () => {
+  if (lancheSelecionado.value) {
+    const itemComAdicionais = {
+      ...lancheSelecionado.value,
+      adicionais: adicionaisSelecionados.value.map((adicional) => ({
+        id: adicional.id,
+        nome: adicional.nome,
+        preco: adicional.preco,
+        descricao: adicional.descricao,
+      })),
+    };
+    pedido.value.itens.push(itemComAdicionais);
+  }
+  mostrarModalAdicionais.value = false;
+  lancheSelecionado.value = null;
+  adicionaisSelecionados.value = [];
+};
+
+const cancelarAdicionais = () => {
+  mostrarModalAdicionais.value = false;
+  lancheSelecionado.value = null;
+  adicionaisSelecionados.value = [];
+};
+
 // Gerar QR Code Pix
 async function gerarQrCodePix() {
   if (typeof window === "undefined" || typeof window.btoa === "undefined") {
@@ -270,7 +430,7 @@ async function gerarQrCodePix() {
     key: chavePix,
     name: "Lucas Carvalho",
     city: "PortoAlegre",
-    message: "Pagamento do pedido " + numeroPedido,
+    message: "Pagamento do pedido",
     value: total,
   });
 
@@ -285,8 +445,14 @@ async function gerarQrCodePix() {
 // Calcular total
 const totalPedido = computed(() => {
   return pedido.value.itens.reduce((total, item) => {
-    const preco = parseFloat(item.preco || 0);
-    return total + (isNaN(preco) ? 0 : preco);
+    const precoItem = parseFloat(item.preco || 0);
+    const precoAdicionais = item.adicionais
+      ? item.adicionais.reduce(
+          (acc, adicional) => acc + parseFloat(adicional.preco || 0),
+          0
+        )
+      : 0;
+    return total + precoItem + precoAdicionais;
   }, 0);
 });
 
@@ -299,18 +465,30 @@ watch([totalPedido, pedidoFinalizado], () => {
   }
 });
 
-// Carregar cardápio
+// Carregar cardápios
 onMounted(async () => {
-  const dados = await getLanches();
-  cardapio.value = dados.map((item) => ({
+  const lanches = await getLanches();
+  cardapioLanches.value = lanches.map((item) => ({
     ...item,
-    imagem: item.imagem || null, // Assume cardapioService returns an 'imagem' field
+    imagem: item.imagem || null,
+  }));
+
+  const bebidas = await getBebidas();
+  cardapioBebidas.value = bebidas.map((item) => ({
+    ...item,
+    imagem: item.imagem || null,
+  }));
+
+  const adicionais = await getAdicionais();
+  cardapioAdicionais.value = adicionais.map((item) => ({
+    ...item,
+    imagem: item.imagem || null,
   }));
 });
 
-// Adicionar item
+// Adicionar item (bebidas e adicionais diretamente)
 const adicionarItem = (item) => {
-  pedido.value.itens.push(item);
+  pedido.value.itens.push({ ...item, adicionais: [] });
 };
 
 // Remover item
@@ -373,7 +551,7 @@ onMounted(() => {
 }
 
 .container {
-  padding-top: 80px; /* Space for fixed toolbar */
+  padding-top: 80px;
 }
 
 h1,
@@ -436,7 +614,7 @@ h4 {
 
 .form-control:focus {
   border-color: #dc3545;
-  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69 miserable);
 }
 
 .list-group-item {

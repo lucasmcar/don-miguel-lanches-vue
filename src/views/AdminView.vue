@@ -1,9 +1,9 @@
 <template>
   <div class="container py-4">
-    <button class="btn btn-outline-danger btn-sm float-end" @click="logout">
-      Sair
-    </button>
-    <h1 class="text-center mb-4 text-danger fw-bold">🍔 Painel Administrativo - Don Miguel Lanches</h1>
+    <button class="btn btn-outline-danger btn-sm float-end" @click="logout">Sair</button>
+    <h1 class="text-center mb-4 text-danger fw-bold">
+      Painel Administrativo - Don Miguel Lanches
+    </h1>
 
     <!-- DASHBOARD -->
     <div class="row mb-4 text-center">
@@ -44,13 +44,36 @@
     <!-- ABAS -->
     <ul class="nav nav-tabs mb-4" role="tablist">
       <li class="nav-item" role="presentation">
-        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#cardapio" type="button" role="tab">
-          📋 Cardápio
+        <button
+          class="nav-link active"
+          data-bs-toggle="tab"
+          data-bs-target="#cardapio"
+          type="button"
+          role="tab"
+        >
+          Cardápio
         </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#pedidos" type="button" role="tab">
-          🧾 Pedidos
+        <button
+          class="nav-link"
+          data-bs-toggle="tab"
+          data-bs-target="#bebidas-adicionais"
+          type="button"
+          role="tab"
+        >
+          Bebidas e Adicionais
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button
+          class="nav-link"
+          data-bs-toggle="tab"
+          data-bs-target="#pedidos"
+          type="button"
+          role="tab"
+        >
+          Pedidos
         </button>
       </li>
     </ul>
@@ -58,6 +81,9 @@
     <div class="tab-content">
       <div class="tab-pane fade show active" id="cardapio" role="tabpanel">
         <GerenciaCardapio />
+      </div>
+      <div class="tab-pane fade" id="bebidas-adicionais" role="tabpanel">
+        <GerenciaBebidasAdicionais />
       </div>
       <div class="tab-pane fade" id="pedidos" role="tabpanel">
         <GerenciaPedido @atualizarDashboard="atualizarDashboard" />
@@ -67,11 +93,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref } from "vue";
 import GerenciaCardapio from "../componentes/GerenciaCardapio.vue";
+import GerenciaBebidasAdicionais from "../componentes/GerenciaBebidasAdicionais.vue";
 import GerenciaPedido from "../componentes/GerenciaPedido.vue";
-import { getAuth, signOut } from 'firebase/auth';
-import { useRouter } from 'vue-router';
+import { getAuth, signOut } from "firebase/auth";
+import { useRouter } from "vue-router";
 
 // Indicadores
 const totalPedidos = ref(0);
@@ -81,21 +108,31 @@ const totalVendas = ref(0);
 
 function atualizarDashboard(pedidos) {
   totalPedidos.value = pedidos.length;
-  pedidosEmAndamento.value = pedidos.filter(p => p.status !== "Finalizado").length;
-  pedidosFinalizados.value = pedidos.filter(p => p.status === "Finalizado").length;
+  pedidosEmAndamento.value = pedidos.filter((p) => p.status !== "Finalizado").length;
+  pedidosFinalizados.value = pedidos.filter((p) => p.status === "Finalizado").length;
   totalVendas.value = pedidos.reduce((soma, pedido) => {
-    return soma + (pedido.pagamentoConfirmado ? pedido.itens.reduce((acc, item) => acc + item.preco, 0) : 0);
+    if (!pedido.pagamentoConfirmado) return soma;
+    return (
+      soma +
+      pedido.itens.reduce((acc, item) => {
+        const precoItem = parseFloat(item.preco || 0);
+        const precoAdicionais = item.adicionais
+          ? item.adicionais.reduce(
+              (a, adicional) => a + parseFloat(adicional.preco || 0),
+              0
+            )
+          : 0;
+        return acc + precoItem + precoAdicionais;
+      }, 0)
+    );
   }, 0);
 }
-
-
-
 const router = useRouter();
 
 function logout() {
   const auth = getAuth();
   signOut(auth).then(() => {
-    router.push('/login');
+    router.push("/login");
   });
 }
 </script>
