@@ -112,21 +112,21 @@ function atualizarDashboard(pedidos) {
   pedidosFinalizados.value = pedidos.filter((p) => p.status === "Finalizado").length;
   totalVendas.value = pedidos.reduce((soma, pedido) => {
     if (!pedido.pagamentoConfirmado) return soma;
-    return (
-      soma +
-      pedido.itens.reduce((acc, item) => {
-        const precoItem = parseFloat(item.preco || 0);
-        const precoAdicionais = item.adicionais
-          ? item.adicionais.reduce(
-              (a, adicional) => a + parseFloat(adicional.preco || 0),
-              0
-            )
-          : 0;
-        return acc + precoItem + precoAdicionais;
-      }, 0)
-    );
+    const totalItens = pedido.itens.reduce((acc, item) => {
+      const precoItem = parseFloat(item.preco || 0);
+      const precoAdicionais = item.adicionais
+        ? item.adicionais.reduce(
+            (a, adicional) => a + parseFloat(adicional.preco || 0),
+            0
+          )
+        : 0;
+      return acc + precoItem + precoAdicionais;
+    }, 0);
+    const frete = pedido.deliveryOption ? parseFloat(pedido.deliveryFee || 0) : 0;
+    return soma + totalItens + frete;
   }, 0);
 }
+
 const router = useRouter();
 
 function logout() {

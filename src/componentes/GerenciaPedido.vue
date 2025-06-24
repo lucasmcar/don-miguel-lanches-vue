@@ -1,7 +1,41 @@
 <template>
   <div>
-    <h2 class="mb-4">Pedidos Recebidos</h2>
+    <h2 class="mb-4">🧾 Pedidos Recebidos</h2>
 
+    <!-- Controles de Filtro -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5>Filtros</h5>
+        <div class="row g-2">
+          <div class="col-md-3">
+            <select v-model="filtroTipo" class="form-select">
+              <option value="dia">Por Dia</option>
+              <option value="mes">Por Mês</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <input
+              v-model="filtroData"
+              :type="filtroTipo === 'dia' ? 'date' : 'month'"
+              class="form-control"
+            />
+          </div>
+          <div class="col-md-3">
+            <button @click="limparFiltro" class="btn btn-secondary">Limpar Filtro</button>
+          </div>
+        </div>
+        <div class="mt-3">
+          <h6>
+            Total das Vendas no Período: <strong>R$ {{ totalVendas.toFixed(2) }}</strong>
+          </h6>
+          <p>
+            Total de Pedidos: <strong>{{ pedidos.length }}</strong>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de Pedidos -->
     <div
       v-for="pedido in pedidos"
       :key="pedido.id"
@@ -33,7 +67,7 @@
             <p><strong>Observações:</strong> {{ pedido.observacoes || "Nenhuma" }}</p>
             <p>
               <strong>Tipo de Entrega:</strong>
-              {{ pedido.deliveryOption ? "Teleentrega" : "Retirada" }}
+              {{ pedido.deliveryOption ? "Tele-entrega" : "Retirada" }}
             </p>
             <p v-if="pedido.deliveryOption">
               <strong>Frete:</strong> R$ {{ (pedido.deliveryFee || 0).toFixed(2) }}
@@ -97,12 +131,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch, onUnmounted } from "vue";
 import { getPedidos, atualizarPedido } from "../../services/pedidoService";
+import { DateTime } from "luxon";
+import { db } from "../../firebase";
+import { collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
 
 const emit = defineEmits(["atualizarDashboard"]);
 const pedidos = ref([]);
+const filtroTipo = ref("dia"); // Tipo de filtro: 'dia' ou 'mes'
+const filtroData = ref(""); // Data ou mês selecionado
+let unsubscribe = null; // Para gerenciar o listener do Firestore
 
+// Formatar data para exibição
 const formatarData = (timestamp) => {
   if (!timestamp || !timestamp.toDate) return "Data inválida";
   const data = timestamp.toDate();
@@ -125,20 +166,80 @@ const calcularTotalPedido = (pedido) => {
   return totalItens + frete;
 };
 
-onMounted(() => {
-  getPedidos((pedidosFirestore) => {
-    pedidos.value = pedidosFirestore;
-    emit("atualizarDashboard", pedidosFirestore);
-  });
+// Calcular total das vendas no período filtrado
+const totalVendas = computed(() => {
+  return pedidos.value.reduce((total, pedido) => {
+    return total + calcularTotalPedido(pedido);
+  }, 0);
 });
 
-watch(
-  pedidos,
-  (newVal) => {
-    emit("atualizarDashboard", newVal);
-  },
-  { deep: true }
-);
+// Aplicar filtro no Firestore
+const aplicarFiltro = () => {
+  // Cancelar listener anterior, se existir
+  if (unsubscribe) {
+    unsubscribe();
+  }
+
+  const colRef = collection(db, "pedidos");
+  let q = colRef;
+
+  if (filtroData.value) {
+    let start, end;
+    if (filtroTipo.value === "dia") {
+      const filtro = DateTime.fromISO(filtroData.value)
+        .setZone("America/Sao_Paulo")
+        .startOf("day");
+      start = Timestamp.fromDate(filtro.toJSDate());
+      end = Timestamp.fromDate(filtro.endOf("day").toJSDate());
+    } else {
+      const filtro = DateTime.fromISO(filtroData.value)
+        .setZone("America/Sao_Paulo")
+        .startOf("month");
+      start = Timestamp.fromDate(filtro.toJSDate());
+      end = Timestamp.fromDate(filtro.endOf("month").toJSDate());
+    }
+
+    q = query(colRef, where("dataCriacao", ">=", start), where("dataCriacao", "<=", end));
+  }
+
+  // Configurar novo listener
+  unsubscribe = onSnapshot(
+    q,
+    (snapshot) => {
+      pedidos.value = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      emit("atualizarDashboard", pedidos.value);
+    },
+    (error) => {
+      console.error("Erro ao carregar pedidos:", error);
+      alert("Erro ao carregar pedidos.");
+    }
+  );
+};
+
+// Limpar os filtros
+const limparFiltro = () => {
+  filtroTipo.value = "dia";
+  filtroData.value = "";
+  aplicarFiltro();
+};
+
+// Inicializar e atualizar filtros
+onMounted(() => {
+  filtroData.value = DateTime.now().setZone("America/Sao_Paulo").toISODate();
+  aplicarFiltro();
+});
+
+// Atualizar filtro quando tipo ou data mudarem
+watch([filtroTipo, filtroData], () => {
+  aplicarFiltro();
+});
+
+// Limpar listener ao desmontar o componente
+onUnmounted(() => {
+  if (unsubscribe) {
+    unsubscribe();
+  }
+});
 
 const atualizarStatus = async (pedido) => {
   try {
