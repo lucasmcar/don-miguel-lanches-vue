@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2 class="mb-4">🧾 Pedidos Recebidos</h2>
+    <h2 class="mb-4">Pedidos Recebidos</h2>
 
     <div
       v-for="pedido in pedidos"
@@ -31,6 +31,13 @@
             <p><strong>Telefone:</strong> {{ pedido.telefone }}</p>
             <p><strong>Endereço:</strong> {{ pedido.endereco }}</p>
             <p><strong>Observações:</strong> {{ pedido.observacoes || "Nenhuma" }}</p>
+            <p>
+              <strong>Tipo de Entrega:</strong>
+              {{ pedido.deliveryOption ? "Teleentrega" : "Retirada" }}
+            </p>
+            <p v-if="pedido.deliveryOption">
+              <strong>Frete:</strong> R$ {{ (pedido.deliveryFee || 0).toFixed(2) }}
+            </p>
             <p><strong>Data:</strong> {{ formatarData(pedido.dataCriacao) }}</p>
 
             <ul class="list-group mb-2">
@@ -63,19 +70,16 @@
 
             <!-- Controles -->
             <div class="d-flex flex-wrap gap-2">
-              <select v-model="pedido.status" class="form-select w-auto">
+              <select
+                v-model="pedido.status"
+                @change="atualizarStatus(pedido)"
+                class="form-select w-auto"
+              >
                 <option>Aguardando</option>
                 <option>Em Preparo</option>
                 <option>Pronto</option>
                 <option>Finalizado</option>
               </select>
-              <button
-                @click="atualizarStatus(pedido)"
-                class="btn btn-success btn-sm"
-                :aria-label="'Atualizar status do pedido ' + pedido.numeroPedido"
-              >
-                Atualizar Status
-              </button>
               <button
                 :disabled="pedido.pagamentoConfirmado"
                 @click="confirmarPagamento(pedido)"
@@ -93,7 +97,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, toRefs } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { getPedidos, atualizarPedido } from "../../services/pedidoService";
 
 const emit = defineEmits(["atualizarDashboard"]);
@@ -105,9 +109,9 @@ const formatarData = (timestamp) => {
   return data.toLocaleString("pt-BR");
 };
 
-// Calcular total do pedido, incluindo adicionais
+// Calcular total do pedido, incluindo adicionais e frete
 const calcularTotalPedido = (pedido) => {
-  return pedido.itens.reduce((total, item) => {
+  const totalItens = pedido.itens.reduce((total, item) => {
     const precoItem = parseFloat(item.preco || 0);
     const precoAdicionais = item.adicionais
       ? item.adicionais.reduce(
@@ -117,13 +121,14 @@ const calcularTotalPedido = (pedido) => {
       : 0;
     return total + precoItem + precoAdicionais;
   }, 0);
+  const frete = pedido.deliveryOption ? parseFloat(pedido.deliveryFee || 0) : 0;
+  return totalItens + frete;
 };
 
 onMounted(() => {
   getPedidos((pedidosFirestore) => {
     pedidos.value = pedidosFirestore;
     emit("atualizarDashboard", pedidosFirestore);
-    console.log("Pedidos carregados:", pedidosFirestore);
   });
 });
 
@@ -141,6 +146,7 @@ const atualizarStatus = async (pedido) => {
     alert("Status atualizado!");
   } catch (e) {
     console.error(e);
+    alert("Erro ao atualizar status.");
   }
 };
 
@@ -150,6 +156,7 @@ const confirmarPagamento = async (pedido) => {
     alert("Pagamento confirmado!");
   } catch (e) {
     console.error(e);
+    alert("Erro ao confirmar pagamento.");
   }
 };
 

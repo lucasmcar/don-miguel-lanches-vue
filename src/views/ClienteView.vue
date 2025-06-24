@@ -63,7 +63,7 @@
   </div>
 
   <div class="container py-5">
-    <h1 class="text-center mb-4 text-primary fw-bold">🍔 Faça seu Pedido</h1>
+    <h1 class="text-center mb-4 text-primary fw-bold">Faça seu Pedido</h1>
 
     <!-- Dados do Cliente -->
     <div class="card shadow-sm p-4 mb-4">
@@ -85,6 +85,45 @@
         </div>
         <div class="col-md-4">
           <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+            <input
+              v-model="pedido.telefone"
+              type="text"
+              class="form-control"
+              placeholder="Telefone (ex: (11) 99999-9999)"
+            />
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-check form-check-inline">
+            <input
+              class="form-check-input"
+              type="radio"
+              name="deliveryOption"
+              id="teleEntrega"
+              value="tele-entrega"
+              v-model="pedido.deliveryOption"
+              @change="validateDeliveryOption"
+            />
+            <label class="form-check-label" for="teleEntrega">Tele-entrega</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input
+              class="form-check-input"
+              type="radio"
+              name="deliveryOption"
+              id="retirarLocal"
+              value="retirar-local"
+              v-model="pedido.deliveryOption"
+              @change="validateDeliveryOption"
+            />
+            <label class="form-check-label" for="retirarLocal">Retirar no Local</label>
+          </div>
+        </div>
+      </div>
+      <div v-if="pedido.deliveryOption === 'tele-entrega'" class="row g-3 mt-3">
+        <div class="col-md-8">
+          <div class="input-group">
             <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
             <input
               v-model="pedido.endereco"
@@ -101,14 +140,26 @@
         </div>
         <div class="col-md-4">
           <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+            <span class="input-group-text">R$</span>
             <input
-              v-model="pedido.telefone"
-              type="text"
+              v-model="deliveryFee"
+              type="number"
+              step="0.01"
+              min="0"
               class="form-control"
-              placeholder="Telefone (ex: (11) 99999-9999)"
+              :class="{ 'is-invalid': errors.deliveryFee }"
+              placeholder="Taxa de entrega"
+              @input="validateDeliveryFee"
             />
+            <div v-if="errors.deliveryFee" class="invalid-feedback">
+              {{ errors.deliveryFee }}
+            </div>
           </div>
+          <p v-if="!deliveryFee" class="text-muted small mt-1">
+            Não sabe a taxa?
+            <a :href="whatsappLink" target="_blank">Entre em contato</a> para confirmar o
+            valor.
+          </p>
         </div>
       </div>
     </div>
@@ -250,6 +301,12 @@
       </ul>
       <p v-else class="text-muted">Nenhum item selecionado.</p>
 
+      <div v-if="pedido.deliveryOption === 'tele-entrega' && deliveryFee" class="mb-3">
+        <p class="text-success">
+          Taxa de Entrega: R$ {{ Number(deliveryFee).toFixed(2) }}
+        </p>
+      </div>
+
       <div class="mb-3">
         <label class="form-label">Observações:</label>
         <textarea
@@ -280,6 +337,9 @@
         class="img-fluid my-2 d-block mx-auto border p-2 rounded"
         style="max-width: 200px"
       />
+      <p v-else class="text-danger">
+        QR Code não gerado. Por favor, informe a taxa de entrega.
+      </p>
       <p class="text-muted small text-center">Escaneie ou copie a chave PIX acima.</p>
       <button @click="confirmarPagamentoPix" class="btn btn-outline-success w-100">
         Já paguei via PIX
@@ -320,11 +380,14 @@ const pedido = ref({
   observacoes: "",
   numeroPedido: numeroPedido,
   status: "Aguardando",
+  deliveryOption: "tele-entrega",
 });
 
+const deliveryFee = ref(null);
 const errors = ref({
   nome: "",
   endereco: "",
+  deliveryFee: "",
 });
 
 const mostrarModal = ref(false);
@@ -340,17 +403,56 @@ const mostrarModalAdicionais = ref(false);
 const lancheSelecionado = ref(null);
 const adicionaisSelecionados = ref([]);
 
+// WhatsApp link
+const whatsappLink = computed(() => {
+  const telefone = "5511999999999"; // Replace with business WhatsApp number
+  const msg = `Olá, gostaria de confirmar a taxa de entrega para o endereço: ${
+    pedido.value.endereco || "não informado"
+  }.`;
+  return `https://wa.me/${telefone}?text=${encodeURIComponent(msg)}`;
+});
+
 // Form validation
 const validateNome = () => {
   errors.value.nome = pedido.value.nome.trim() ? "" : "Nome é obrigatório.";
 };
 
 const validateEndereco = () => {
-  errors.value.endereco = pedido.value.endereco.trim() ? "" : "Endereço é obrigatório.";
+  if (pedido.value.deliveryOption === "tele-entrega") {
+    errors.value.endereco = pedido.value.endereco.trim()
+      ? ""
+      : "Endereço é obrigatório para tele-entrega.";
+  } else {
+    errors.value.endereco = "";
+  }
+};
+
+const validateDeliveryFee = () => {
+  if (pedido.value.deliveryOption === "tele-entrega") {
+    errors.value.deliveryFee =
+      deliveryFee.value && parseFloat(deliveryFee.value) >= 0
+        ? ""
+        : "Taxa de entrega é obrigatória para tele-entrega.";
+  } else {
+    errors.value.deliveryFee = "";
+  }
+};
+
+const validateDeliveryOption = () => {
+  validateEndereco();
+  validateDeliveryFee();
 };
 
 const isFormValid = computed(() => {
-  return pedido.value.nome.trim() && pedido.value.endereco.trim();
+  if (pedido.value.deliveryOption === "tele-entrega") {
+    return (
+      pedido.value.nome.trim() &&
+      pedido.value.endereco.trim() &&
+      deliveryFee.value &&
+      parseFloat(deliveryFee.value) >= 0
+    );
+  }
+  return pedido.value.nome.trim();
 });
 
 // Copiar número do pedido
@@ -409,6 +511,11 @@ async function gerarQrCodePix() {
     return;
   }
 
+  if (pedido.value.deliveryOption === "tele-entrega" && !deliveryFee.value) {
+    pixQrCode.value = "";
+    return;
+  }
+
   let total;
   try {
     const normalizedValue = (totalPedido.value || "").toString().replace(",", ".");
@@ -430,7 +537,7 @@ async function gerarQrCodePix() {
     key: chavePix,
     name: "Lucas Carvalho",
     city: "PortoAlegre",
-    message: "Pagamento do pedido",
+    message: `Pagamento do pedido #${pedido.value.numeroPedido}`,
     value: total,
   });
 
@@ -444,7 +551,7 @@ async function gerarQrCodePix() {
 
 // Calcular total
 const totalPedido = computed(() => {
-  return pedido.value.itens.reduce((total, item) => {
+  const itemsTotal = pedido.value.itens.reduce((total, item) => {
     const precoItem = parseFloat(item.preco || 0);
     const precoAdicionais = item.adicionais
       ? item.adicionais.reduce(
@@ -454,16 +561,26 @@ const totalPedido = computed(() => {
       : 0;
     return total + precoItem + precoAdicionais;
   }, 0);
+
+  const fee =
+    pedido.value.deliveryOption === "tele-entrega" && deliveryFee.value
+      ? parseFloat(deliveryFee.value) || 0
+      : 0;
+
+  return itemsTotal + fee;
 });
 
 // Regenera QR code
-watch([totalPedido, pedidoFinalizado], () => {
-  if (pedidoFinalizado.value) {
-    gerarQrCodePix();
-  } else {
-    pixQrCode.value = "";
+watch(
+  [totalPedido, pedidoFinalizado, deliveryFee, () => pedido.value.deliveryOption],
+  () => {
+    if (pedidoFinalizado.value) {
+      gerarQrCodePix();
+    } else {
+      pixQrCode.value = "";
+    }
   }
-});
+);
 
 // Carregar cardápios
 onMounted(async () => {
@@ -486,7 +603,7 @@ onMounted(async () => {
   }));
 });
 
-// Adicionar item (bebidas e adicionais diretamente)
+// Adicionar item (bebida ou adicional)
 const adicionarItem = (item) => {
   pedido.value.itens.push({ ...item, adicionais: [] });
 };
@@ -501,10 +618,17 @@ const finalizarPedido = async () => {
   if (!isFormValid.value) {
     validateNome();
     validateEndereco();
+    validateDeliveryFee();
     return;
   }
   try {
-    await criarPedido(pedido.value);
+    await criarPedido({
+      ...pedido.value,
+      deliveryFee:
+        pedido.value.deliveryOption === "tele-entrega"
+          ? parseFloat(deliveryFee.value) || 0
+          : 0,
+    });
     statusPedido.value = "Pedido enviado! Aguardando pagamento via PIX...";
     pedidoFinalizado.value = true;
     mostrarModal.value = true;
@@ -524,6 +648,13 @@ const confirmarPagamentoPix = () => {
     observacoes: "",
     numeroPedido: Math.floor(100000 + Math.random() * 900000),
     status: "Aguardando",
+    deliveryOption: "tele-entrega",
+  };
+  deliveryFee.value = null;
+  errors.value = {
+    nome: "",
+    endereco: "",
+    deliveryFee: "",
   };
   pedidoFinalizado.value = false;
 };
@@ -614,7 +745,7 @@ h4 {
 
 .form-control:focus {
   border-color: #dc3545;
-  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69 miserable);
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
 }
 
 .list-group-item {
@@ -623,5 +754,10 @@ h4 {
 
 .list-group-item:hover {
   background-color: #f8f9fa;
+}
+
+.form-check-input:checked {
+  background-color: #dc3545;
+  border-color: #dc3545;
 }
 </style>

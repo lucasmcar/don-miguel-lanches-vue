@@ -1,29 +1,31 @@
-import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router';
-
+import { createRouter, createWebHashHistory } from 'vue-router';
 import ClienteView from '../src/views/ClienteView.vue';
 import AdminView from '../src/views/AdminView.vue';
 import LoginView from '../src/views/LoginView.vue';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 const routes = [
-    {
-      path: '/faca-seu-pedido',
-      name: 'Cliente',
-      component: ClienteView
-    },
-    {
-      path: '/admin',
-      name: 'Admin',
-      component: AdminView,
-      meta: { requiresAuth: true }
-    },
-    { path: '/dml/login', name: 'Login', component: LoginView },
-
-    {
-      path: '/:pathMatch(.*)*',
-      redirect: '/faca-seu-pedido' // Qualquer rota desconhecida vai para a tela do cliente
-    }
-  ]
+  {
+    path: '/faca-seu-pedido',
+    name: 'Cliente',
+    component: ClienteView
+  },
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: AdminView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/dml/login', // Corrigido para corresponder à URL desejada
+    name: 'Login',
+    component: LoginView
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/faca-seu-pedido' // Redireciona rotas desconhecidas
+  }
+];
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -31,29 +33,29 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  const isElectron = navigator.userAgent.toLowerCase().includes('electron')
-  const isAdminPath = to.path.startsWith('/admin') || to.path.startsWith('/dml')
-  const auth = getAuth()
+  const isElectron = navigator.userAgent.toLowerCase().includes('electron');
+  const isAdminPath = to.path.startsWith('/admin') || to.path === '/admin/dml/login'; // Inclui explicitamente a rota de login
+  const auth = getAuth();
 
+  // Em ambiente Electron, bloqueia rotas não-administrativas
   if (isElectron && !isAdminPath) {
-    // bloqueia acesso a qualquer rota que não seja admin ou dml
-    return next('/dml/login')
+    return next('/admin/dml/login');
   }
 
-  const requiresAuth = to.meta.requiresAuth // exemplo: meta flag nas rotas protegidas
+  const requiresAuth = to.meta.requiresAuth;
 
   if (requiresAuth) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      unsubscribe()
+      unsubscribe();
       if (user) {
-        next()
+        next();
       } else {
-        next('/dml/login')
+        next('/admin/dml/login');
       }
-    })
+    });
   } else {
-    next()
+    next();
   }
-})
+});
 
 export default router;
