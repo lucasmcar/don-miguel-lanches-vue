@@ -100,15 +100,6 @@ import GerenciaPedido from "../componentes/GerenciaPedido.vue";
 import { getAuth, signOut } from "firebase/auth";
 import { useRouter } from "vue-router";
 
-export default {
-  name: "AdminView",
-  metaInfo: {
-    meta: [
-      { name: "robots", content: "noindex" }, // Impede indexação
-    ],
-  },
-};
-
 // Indicadores
 const totalPedidos = ref(0);
 const pedidosEmAndamento = ref(0);
